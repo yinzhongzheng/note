@@ -31,5 +31,18 @@ Selector提供了询问注册在其上的所有Channel是够已经准备好执�
 * channel是selector管理的对象，channel是对socket的一种封装，底层实际操作读写的还是socket流，channel实现了读写的非阻塞，提高了系统的并发量，selector只能托管非阻塞的channel。非阻塞不代表是异步，不存在回调的概念。
 * ByteBuffer是channel读写的最小单元,buffer又分为JVM内存管理的buffer和direct buffer（内核可以直接填充和排满）。通过direct buffer大大提高了数据集传输效率，也就是常说的0拷贝，不需要进行中转。
 
+## I/O 多路复用技术
+I/O多路复用是将多个I/O的阻塞复用到一个select的阻塞上。从而使系统在单线程的情况下可以处理多个客户端请求。
+1. select/pool
+进程将一个或多个fd（socket描述符）传递给select或pool调用，阻塞在select操作上，select/pool会检测多个fd是否处于就绪状态。select/pool是顺序扫描所有的fd，来判断状态的，支持fd的数量有限。缺点一个是扫描性能差，不能支持大量的fd的数量。
+2. epool
+epool模型不是通过扫描的方式，是通过基于事件驱动的方式代替低效的扫描。每个fd上面都有一个callback，当socke处于就绪状态，才会主动去调用callback函数，epool通过该callback来实现。
+
+## 消息传递
+将fd的消息从内核通知给用户空间，传统的做法是通过复制的方式，将内核数据拷贝到用户空间。epool通过内核和用户空间mmap同一块内存来避免数据的拷贝，来提高消息传递的效率。
+
+## 异步I/O
+通过系统调用告知内核开始某个操作，此事该线程将不会阻塞，内核在整个操作完成后（包括数组从内核复制到用户缓冲区），会以回调的方式通知调用者。而epool是告知调用者哪些fd已经就绪。
+
 ## 个人主页
 https://github.com/yinzhongzheng
